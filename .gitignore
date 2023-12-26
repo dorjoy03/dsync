@@ -1,0 +1,7 @@
+# emacs backup files
+*~
+
+# object files
+*.o
+
+dsync
