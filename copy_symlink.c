@@ -56,7 +56,7 @@ copy_symlink(char *src, char *dst, uintmax_t size)
 	ret = symlinkat(buf, AT_FDCWD, dst);
 	if (ret != 0) {
 		if (errno == EEXIST) {
-			ret = unlinkat(AT_FDCWD, src, 0);
+			ret = unlinkat(AT_FDCWD, dst, 0);
 			if (ret != 0) {
 				err = "Skipping copy of symbolic link %s. Failed to unlink "
 					"existing symbolic link %s";
