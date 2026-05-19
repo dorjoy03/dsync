@@ -48,7 +48,7 @@ usage(FILE *stream)
 		"contents of the given sources. Symbolic links inside SOURCE(s) are not followed\n"
 		"but copied themselves. Extra directories or files in destination directory are\n"
 		"not detected or deleted. dsync doesn't make sure data is written to disk.\n";
-	fprintf(stream, usage);
+	fprintf(stream, "%s", usage);
 	return;
 }
 
@@ -101,7 +101,7 @@ main(int argc, char *argv[])
 
 	if (argc - optind < 2) {
 		err = "At least one source and a destination directory must be provided.\n\n";
-		fprintf(stderr, err);
+		fprintf(stderr, "%s", err);
 		usage(stderr);
 		goto err0;
 	}
