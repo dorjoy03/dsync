@@ -30,7 +30,8 @@ for doing the sync/copy work.
 **Note:** Use of multiple threads has been provided as an option (-j) as using
 multiple threads will not always improve the time needed specially when copying.
 It can depend on a lot of factors like sources' size distribution, filesystem,
-SSD/Hard disk etc etc.
+SSD/Hard disk etc etc. With that said, when there are many files that don't need
+copying, number of threads reduces the time to sync a lot.
 
 ## Implementation
 dsync can use multiple threads (specified via the -j option) to do the sync/copy
