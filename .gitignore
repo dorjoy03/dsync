@@ -1,7 +1,9 @@
-# emacs backup files
-*~
+#perf artifacts
+flamegraph*.html
+perf*.data*
 
 # object files
 *.o
 
+# exe file
 dsync
