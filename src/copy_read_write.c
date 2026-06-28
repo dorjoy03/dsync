@@ -20,9 +20,9 @@
 int
 copy_read_write(int src, int dst, uintmax_t size)
 {
-	/* Buffer size of 128KiB is picked up from gnu coreutils/src/io_blksize.h */
-	size_t buf_size = (uintmax_t) (128 * 1024) < (uintmax_t) SSIZE_MAX
-		? (128 * 1024)
+	/* Buffer size of 256KiB is picked up from gnu coreutils/src/io_blksize.h */
+	size_t buf_size = (uintmax_t) (256 * 1024) < (uintmax_t) SSIZE_MAX
+		? (256 * 1024)
 		: SSIZE_MAX;
 	uint8_t *buf = malloc(buf_size);
 	if (buf == NULL)
