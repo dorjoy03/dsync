@@ -4,27 +4,10 @@
  */
 
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include "sync_data_mpmc_queue.h"
 #include "sync_file.h"
 #include "sync_thread.h"
-
-/*
- * Syncs ${sd->src} to ${sd->dst} and free-s ${sd}.
- */
-static inline void
-try_sync_file(struct sync_data *sd, bool force_copy)
-{
-	/* Ignore return value from sync_file as it takes care of printing to stderr
-	   in case of failure and we really have nothing to do here. */
-	sync_file(sd->src, sd->dst, force_copy);
-	free(sd->dst);
-	free(sd->src);
-	free(sd);
-	return;
-}
 
 /*
  * Dequeues sync_data entries from the queue and calls try_sync_file to do the
@@ -37,12 +20,12 @@ void *
 sync_thread_func(void *data)
 {
 	struct sync_thread_data *thread_data = data;
+	struct sync_data sd;
 
 	while(true) {
-		struct sync_data *sd;
 		int ret = sync_data_mpmc_queue_dequeue(thread_data->Q, &sd);
 		if (ret == 0) {
-			try_sync_file(sd, thread_data->force_copy);
+			sync_file(sd.src, sd.dst, thread_data->force_copy);
 		} else {
 			int traverse_done = __atomic_load_n(&thread_data->traverse_done,
 			                                    __ATOMIC_ACQUIRE);
@@ -62,7 +45,7 @@ sync_thread_func(void *data)
 				while (true) {
 					ret = sync_data_mpmc_queue_dequeue(thread_data->Q, &sd);
 					if (ret == 0)
-						try_sync_file(sd, thread_data->force_copy);
+						sync_file(sd.src, sd.dst, thread_data->force_copy);
 					else
 						break;
 				}

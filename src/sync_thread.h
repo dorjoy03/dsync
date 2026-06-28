@@ -10,11 +10,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define PATH_SIZE 4096
 #define CACHELINE_SIZE 64
 
 struct sync_data {
-	char *src;
-	char *dst;
+	uint16_t src_len;
+	char src[PATH_SIZE];
+	uint16_t dst_len;
+	char dst[PATH_SIZE];
 };
 
 /*

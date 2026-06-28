@@ -76,49 +76,34 @@ static inline int
 prepare_sync_data(char *src, size_t src_len, char *dst, size_t dst_len, int level,
                   struct sync_data *sd)
 {
-	/* Make sure ${src_len + 1} will not wrap around. */
-	if (src_len > SIZE_MAX - 1) {
+	/* Make sure ${src_len + 1} will fit. */
+	if (src_len > PATH_SIZE - 1) {
 		errno = ENOMEM;
-		goto err0;
+		goto err;
 	}
 
-	char *tmp;
-
-	size_t total_src_len = src_len + 1;
-	size_t buf_size = total_src_len < BUF_SIZE ? BUF_SIZE : total_src_len;
-	tmp = malloc(buf_size);
-	if (tmp == NULL)
-		goto err0;
-	sd->src = tmp;
+	sd->src_len = src_len + 1;
 	memcpy(sd->src, src, src_len);
-	sd->src[total_src_len - 1] = '\0';
+	sd->src[src_len] = '\0';
 
 	char *suffix = get_path_suffix_at_level(src, src_len, level);
 	size_t suffix_len = strlen(suffix);
 
-	/* Make sure ${dst_len + suffix_len + 2} will not wrap around. */
-	if (dst_len > SIZE_MAX - suffix_len || dst_len + suffix_len > SIZE_MAX - 2) {
+	/* Make sure ${dst_len + suffix_len + 2} will fit. */
+	if (dst_len > PATH_SIZE - suffix_len || dst_len + suffix_len > PATH_SIZE - 2) {
 		errno = ENOMEM;
-		goto err1;
+		goto err;
 	}
 
-	size_t total_dst_len = dst_len + suffix_len + 2;
-	buf_size = total_dst_len < BUF_SIZE ? BUF_SIZE : total_dst_len;
-	tmp = malloc(buf_size);
-	if (tmp == NULL)
-		goto err1;
-	sd->dst = tmp;
+	sd->dst_len = dst_len + suffix_len + 2;
 	memcpy(sd->dst, dst, dst_len);
 	sd->dst[dst_len] = '/';
 	memcpy(sd->dst + dst_len + 1, suffix, suffix_len);
-	sd->dst[total_dst_len - 1] = '\0';
+	sd->dst[sd->dst_len - 1] = '\0';
 
 	return 0;
 
- err1:
-	free(sd->src);
-
- err0:
+ err:
 	return -1;
 }
 
@@ -161,7 +146,7 @@ traverse_and_queue(char *src_paths[], char *dst_path, struct sync_data_mpmc_queu
 		goto done;
 	}
 
-	size_t sizeof_sync_data = sizeof(struct sync_data);
+	struct sync_data sd;
 	size_t dst_len = strlen(dst_path);
 
 	FTSENT *ftsent = NULL;
@@ -230,27 +215,16 @@ traverse_and_queue(char *src_paths[], char *dst_path, struct sync_data_mpmc_queu
 			if (ftsent->fts_pathlen <= 0 || ftsent->fts_level < 0)
 				break;
 
-			/* ${sd}, ${sd->src} and ${sd->dst} will be free-d by the thread
-			   that dequeues this ${sd}. */
-			struct sync_data *sd = malloc(sizeof_sync_data);
-			if (sd == NULL) {
-				rc = -1;
-				err = "Skipping sync of file %s";
-				print_error_and_reset_errno(errno, err, ftsent->fts_path);
-				break;
-			}
-			sd->src = sd->dst = NULL;
 			ret = prepare_sync_data(ftsent->fts_path, ftsent->fts_pathlen,
-			                        dst_path, dst_len, ftsent->fts_level, sd);
+			                        dst_path, dst_len, ftsent->fts_level, &sd);
 			if (ret != 0) {
 				rc = -1;
-				free(sd);
 				err = "Skipping sync of file %s";
 				print_error_and_reset_errno(errno, err, ftsent->fts_path);
 				break;
 			}
 
-			while ((ret = sync_data_mpmc_queue_enqueue(Q, sd)) != 0)
+			while ((ret = sync_data_mpmc_queue_enqueue(Q, &sd)) != 0)
 				;
 
 			break;

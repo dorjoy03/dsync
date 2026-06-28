@@ -5,5 +5,8 @@ perf*.data*
 # object files
 *.o
 
+# asm files
+*.s
+
 # exe file
 dsync

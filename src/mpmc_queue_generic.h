@@ -19,7 +19,7 @@
 
 #define CACHELINE_SIZE 64
 
-#define MPMC_QUEUE_DECLARE(prefix, type)                                          \
+#define MPMC_QUEUE_DECLARE(prefix, type, copy_fn)                                          \
                                                                                   \
 struct queue_entry {                                                              \
     size_t seq;                                                                   \
@@ -101,7 +101,7 @@ prefix##_mpmc_queue_free(struct prefix##_mpmc_queue *Q)                         
  * is full.                                                                       \
  */                                                                               \
 int                                                                               \
-prefix##_mpmc_queue_enqueue(struct prefix##_mpmc_queue *Q, type data)             \
+prefix##_mpmc_queue_enqueue(struct prefix##_mpmc_queue *Q, type *data)             \
 {                                                                                 \
     struct queue_entry *entry;                                                    \
     size_t mask = Q->queue_mask;                                                  \
@@ -122,7 +122,7 @@ prefix##_mpmc_queue_enqueue(struct prefix##_mpmc_queue *Q, type data)           
         }                                                                         \
     }                                                                             \
                                                                                   \
-    entry->data = data;                                                           \
+    copy_fn(data, &(entry->data));                                                           \
     __atomic_store_n(&entry->seq, pos + 1, __ATOMIC_RELEASE);                     \
                                                                                   \
     return 0;                                                                     \
@@ -156,7 +156,7 @@ prefix##_mpmc_queue_dequeue(struct prefix##_mpmc_queue *Q, type *data)          
         }                                                                         \
     }                                                                             \
                                                                                   \
-    *data = entry->data;                                                          \
+    copy_fn(&(entry->data), data);                                                          \
     __atomic_store_n(&entry->seq, pos + mask + 1, __ATOMIC_RELEASE);              \
                                                                                   \
     return 0;                                                                     \
